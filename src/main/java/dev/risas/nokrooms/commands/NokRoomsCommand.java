@@ -5,10 +5,6 @@ import dev.risas.nokrooms.controllers.RoomController;
 import dev.risas.nokrooms.models.Room;
 import dev.risas.nokrooms.models.RoomSelection;
 import dev.risas.nokrooms.utilities.ChatUtil;
-import dev.risas.nokrooms.utilities.cuboid.Cuboid;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -77,36 +73,10 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
                     return false;
                 }
 
-                Cuboid cuboid = roomSelection.getCuboid();
-                roomController.createRoom(roomName, cuboid);
+                roomController.createRoom(roomName, roomSelection.getCuboid());
                 roomSelection.clear(plugin, player);
 
                 ChatUtil.sendMessage(player, "&aRoom '" + roomName + "' ha sido creada correctamente.");
-
-                World world = cuboid.getWorld();
-                int minX = cuboid.getX1();
-                int maxX = cuboid.getX2();
-                int minY = cuboid.getY1();
-                int maxY = cuboid.getY2();
-                int minZ = cuboid.getZ1();
-                int maxZ = cuboid.getZ2();
-
-                for (int y = minY; y <= maxY; y++) {
-                    for (int x = minX; x <= maxX; x++) {
-                        for (int z = minZ; z <= maxZ; z++) {
-                            boolean borderX = (x == minX || x == maxX);
-                            boolean borderZ = (z == minZ || z == maxZ);
-                            boolean borderY = (y == minY || y == maxY);
-
-                            if (borderX || borderZ || borderY) {
-                                Block block = world.getBlockAt(x, y, z);
-                                if (block.getType() != Material.AIR) continue;
-
-                                block.setType(Material.GLASS);
-                            }
-                        }
-                    }
-                }
             }
             case "delete" -> {
                 if (args.length < 2) {
@@ -128,7 +98,7 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
                     return false;
                 }
 
-                roomController.deleteRoom(roomName);
+                roomController.deleteRoom(room);
                 ChatUtil.sendMessage(sender, "&aRoom '" + roomName + "' eliminado.");
             }
             case "list" -> {

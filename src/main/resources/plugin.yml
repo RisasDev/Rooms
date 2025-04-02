@@ -7,4 +7,4 @@ commands:
   nokrooms:
     description: NokRooms Command
     permission: nokrooms.command.nokrooms
-    aliases: [nokroom, rooms, room]
+    aliases: ["nokroom", "rooms", "room"]

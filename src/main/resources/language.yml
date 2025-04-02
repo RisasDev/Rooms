@@ -1,0 +1,9 @@
+room-message:
+  winner:
+    - "&eHaz ganado el duelo en la room &6%room-name%&e."
+  loser:
+    - "&eHaz perdido el duelo en la room &6%room-name%&e."
+  join: "&eHaz entrado al room &6%room-name%&e."
+  leave: "&eHaz salido de la room &6%room-name%&e."
+  not-start: "&cEl duelo no pudo comenzar porque hay muchos jugadores en la room."
+  start: "&aEl duelo ha comenzado!"

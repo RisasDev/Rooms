@@ -13,26 +13,28 @@ import java.util.Objects;
 @Getter
 public final class NokRooms extends JavaPlugin {
 
-    private FileConfig configFile;
+    private FileConfig configFile, languageFile;
     private RoomController roomController;
 
     @Override
     public void onEnable() {
         this.configFile = new FileConfig(this, "config.yml");
-        this.roomController = new RoomController();
+        this.languageFile = new FileConfig(this, "language.yml");
+        this.roomController = new RoomController(this);
 
         PluginManager pluginManager = this.getServer().getPluginManager();
         pluginManager.registerEvents(new RoomListener(this), this);
 
         Objects.requireNonNull(this.getCommand("nokrooms")).setExecutor(new NokRoomsCommand(this));
+        Objects.requireNonNull(this.getCommand("nokrooms")).setTabCompleter(new NokRoomsCommand(this));
     }
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        this.roomController.onDisable();
     }
 
     public void onReload() {
-        this.configFile.reload();
+        this.languageFile.reload();
     }
 }

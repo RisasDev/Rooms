@@ -7,7 +7,8 @@ import dev.risas.nokrooms.events.RoomLeftEvent;
 import dev.risas.nokrooms.models.Room;
 import dev.risas.nokrooms.models.RoomSelection;
 import dev.risas.nokrooms.utilities.ChatUtil;
-import org.bukkit.GameMode;
+import dev.risas.nokrooms.utilities.FileConfig;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -17,6 +18,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -27,25 +29,29 @@ import org.bukkit.inventory.ItemStack;
 public class RoomListener implements Listener {
 
     private final NokRooms plugin;
+    private final FileConfig languageFile;
     private final RoomController roomController;
 
     public RoomListener(NokRooms plugin) {
         this.plugin = plugin;
+        this.languageFile = plugin.getLanguageFile();
         this.roomController = plugin.getRoomController();
     }
 
     @EventHandler
-    private void onRoomEnteredEvent(RoomEnteredEvent event) {
+    public void onRoomEnteredEvent(RoomEnteredEvent event) {
         Player player = event.getPlayer();
 
         Room room = event.getRoom();
+        if (room.isBusy()) return;
+
         room.addPlayer(player);
+        ChatUtil.sendMessage(player, languageFile.getString("room-message.join")
+                .replace("%room-name%", room.getName()));
 
-        ChatUtil.sendMessage(player, "&eHas entrado al room " + room.getName());
-
-        if (room.isCompleteRoom()) {
-            System.out.printf("players in room order: " + room.getPeopleInRoom());
-            System.out.printf("se esta iniciando el room");
+        if (room.getRoomSize() >= 2 && !room.isStartingTask()) {
+            System.out.println("players in room order: " + room.getPeopleInRoom());
+            System.out.println("se esta iniciando el room");
             room.startTask(plugin);
         }
     }
@@ -56,12 +62,18 @@ public class RoomListener implements Listener {
 
         Room room = event.getRoom();
         room.removePlayer(player);
+        ChatUtil.sendMessage(player, languageFile.getString("room-message.leave")
+                .replace("%room-name%", room.getName()));
 
-        ChatUtil.sendMessage(player, "&eHas salido del room " + room.getName());
-
-        if (!room.isCompleteRoom() && room.isStartingTask() && !room.isBusy()) {
+        if (room.isBusy()) {
+            roomController.endRoom(room.getOpponent(player), player, room);
+        }
+        else if (room.isStartingTask() && !room.isBusy()) {
             room.stopTask();
             System.out.printf("se cancelado el room " + room.getName());
+        }
+        else if (room.getRoomSize() == 2 && !room.isStartingTask()) {
+            room.startTask(plugin);
         }
     }
 
@@ -80,8 +92,21 @@ public class RoomListener implements Listener {
     }
 
     @EventHandler
-    public void onPlayerRoomDeath(PlayerDeathEvent event) {
+    public void onPlayerRoomDeathEvent(PlayerDeathEvent event) {
         Player player = event.getEntity();
+        Room room = roomController.getRoomByPlayer(player);
+        if (room == null || !room.isBusy()) return;
+
+        roomController.endRoom(player.getKiller(), player, room);
+    }
+
+    @EventHandler
+    public void onPlayerRoomQuitEvent(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        Room room = roomController.getRoomByPlayer(player);
+        if (room == null) return;
+
+        Bukkit.getPluginManager().callEvent(new RoomLeftEvent(player, room));
     }
 
     @EventHandler

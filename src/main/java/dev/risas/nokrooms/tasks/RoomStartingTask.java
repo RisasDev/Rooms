@@ -2,29 +2,34 @@ package dev.risas.nokrooms.tasks;
 
 import dev.risas.nokrooms.NokRooms;
 import dev.risas.nokrooms.models.Room;
-import dev.risas.nokrooms.utilities.ChatUtil;
+import dev.risas.nokrooms.utilities.FileConfig;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class RoomStartingTask extends BukkitRunnable {
 
     private final NokRooms plugin;
+    private final FileConfig languageFile;
+
     private final Room room;
 
     public RoomStartingTask(NokRooms plugin, Room room) {
         this.plugin = plugin;
+        this.languageFile = plugin.getLanguageFile();
         this.room = room;
     }
 
     @Override
     public void run() {
-        if (room.getPeopleInRoom().size() > 2) {
-            room.sendRoomMessage("&cHay muchas personas en la sala para comenzar el duelo.");
+        room.setTask(null);
+
+        if (room.getRoomSize() > 2) {
+            room.sendRoomMessage(languageFile.getString("room-message.not-start"));
             return;
         }
 
         room.setBusy(true);
-        room.generateGlass();
-        ChatUtil.sendMessage();
+        room.generateBorder(false);
+        room.sendRoomMessage(languageFile.getString("room-message.start"));
     }
 
     public void start() {

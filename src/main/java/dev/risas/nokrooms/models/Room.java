@@ -3,15 +3,17 @@ package dev.risas.nokrooms.models;
 import dev.risas.nokrooms.NokRooms;
 import dev.risas.nokrooms.tasks.RoomStartingTask;
 import dev.risas.nokrooms.utilities.ChatUtil;
+import dev.risas.nokrooms.utilities.SerializeUtil;
 import dev.risas.nokrooms.utilities.cuboid.Cuboid;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,6 +34,20 @@ public class Room {
     public Room(String name, Cuboid cuboid) {
         this.name = name;
         this.cuboid = cuboid;
+        this.peopleInRoom = new ArrayList<>();
+    }
+
+    public Room(String name, ConfigurationSection section) {
+        this.name = name;
+        this.cuboid = SerializeUtil.deserializeCuboid(section.getString("cuboid"));
+        this.peopleInRoom = new ArrayList<>();
+    }
+
+    public Player getOpponent(Player player) {
+        return peopleInRoom.stream()
+                .filter(roomPlayer -> !roomPlayer.equals(player))
+                .findFirst()
+                .orElse(null);
     }
 
     public void addPlayer(Player player) {
@@ -46,11 +62,11 @@ public class Room {
         return peopleInRoom.contains(player);
     }
 
-    public boolean isCompleteRoom() {
-        return peopleInRoom.size() >= 2;
+    public int getRoomSize() {
+        return peopleInRoom.size();
     }
 
-    public void generateGlass() {
+    public void generateBorder(boolean remove) {
         World world = cuboid.getWorld();
         int minX = cuboid.getX1();
         int maxX = cuboid.getX2();
@@ -68,9 +84,13 @@ public class Room {
 
                     if (borderX || borderZ || borderY) {
                         Block block = world.getBlockAt(x, y, z);
-                        if (block.getType() != Material.AIR) continue;
 
-                        block.setType(Material.GLASS);
+                        if (remove && block.getType() == Material.AIR) {
+                            block.setType(Material.AIR);
+                        }
+                        else if (block.getType() == Material.AIR){
+                            block.setType(Material.GLASS);
+                        }
                     }
                 }
             }
@@ -85,6 +105,7 @@ public class Room {
     public void stopTask() {
         if (this.task != null) {
             this.task.cancel();
+            this.task = null;
         }
     }
 
