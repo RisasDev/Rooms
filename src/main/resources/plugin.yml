@@ -1,0 +1,10 @@
+name: NokRooms
+version: '${project.version}'
+main: dev.risas.nokrooms.NokRooms
+api-version: '1.13'
+author: Risas
+commands:
+  nokrooms:
+    description: NokRooms Command
+    permission: nokrooms.command.nokrooms
+    aliases: [nokroom, rooms, room]
