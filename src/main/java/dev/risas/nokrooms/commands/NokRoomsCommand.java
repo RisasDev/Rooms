@@ -39,6 +39,7 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
                     " &7● &e/" + label + " delete <room> &7- &fElimina una room",
                     " &7● &e/" + label + " list &7- &fMuestra todas las rooms.",
                     " &7● &e/" + label + " teleport <room> &7- &fTeletransporta a una room.",
+                    " &7● &e/" + label + " wand &7- &fTe da la herramienta para crear rooms.",
                     " &7● &e/" + label + " reload &7- &fRecarga la configuración.",
                     ChatUtil.NORMAL_LINE
             });
@@ -140,6 +141,14 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
 
                 ChatUtil.sendMessage(player, "&eTe has teletransportado al room '" + roomName + "'.");
             }
+            case "wand" -> {
+                if (!(sender instanceof Player player)) {
+                    ChatUtil.sendMessage(sender, "&cEste comando solo puede ser ejecutado por un jugador.");
+                    return false;
+                }
+
+                player.getInventory().addItem(RoomSelection.SELECTION_WAND);
+            }
             case "reload" -> {
                 plugin.onReload();
                 ChatUtil.sendMessage(sender, "&aNokRooms ha sido recargado correctamente.");
@@ -151,6 +160,6 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
-        return args.length == 1 ? List.of("create", "delete", "list", "teleport", "reload") : null;
+        return args.length == 1 ? List.of("create", "delete", "list", "teleport", "wand", "reload") : null;
     }
 }
