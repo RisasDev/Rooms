@@ -21,6 +21,8 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Optional;
+
 /**
  * @author Risas
  * @date 01-04-2025
@@ -50,8 +52,6 @@ public class RoomListener implements Listener {
                 .replace("%room-name%", room.getName()));
 
         if (room.getRoomSize() >= 2 && !room.isStartingTask()) {
-            System.out.println("players in room order: " + room.getPeopleInRoom());
-            System.out.println("se esta iniciando el room");
             room.startTask(plugin);
         }
     }
@@ -70,7 +70,6 @@ public class RoomListener implements Listener {
         }
         else if (room.isStartingTask() && !room.isBusy()) {
             room.stopTask();
-            System.out.printf("se cancelado el room " + room.getName());
         }
         else if (room.getRoomSize() == 2 && !room.isStartingTask()) {
             room.startTask(plugin);
@@ -85,10 +84,13 @@ public class RoomListener implements Listener {
         Location from = event.getFrom();
         if (to.getBlockX() == from.getBlockX() && to.getBlockZ() == from.getBlockZ()) return;
 
-        Room room = roomController.getRoomByLocation(to);
+        Player player = event.getPlayer();
+
+        Room room = Optional.ofNullable(roomController.getRoomByLocation(to))
+                .orElseGet(() -> roomController.getRoomByLocation(from));
         if (room == null) return;
 
-        roomController.checkEnterOrLeave(event.getPlayer(), room, from, to);
+        roomController.checkEnterOrLeave(player, room, from, to);
     }
 
     @EventHandler

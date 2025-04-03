@@ -27,6 +27,8 @@ public class RoomStartingTask extends BukkitRunnable {
             return;
         }
 
+        room.getPeopleInRoom().forEach(player -> room.getPotionEffects().forEach(player::addPotionEffect));
+
         room.setBusy(true);
         room.generateBorder(false);
         room.sendRoomMessage(languageFile.getString("room-message.start"));

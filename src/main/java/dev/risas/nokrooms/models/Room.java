@@ -12,6 +12,8 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +29,7 @@ public class Room {
 
     private final String name;
     private final Cuboid cuboid;
+    private List<PotionEffect> potionEffects;
     private List<Player> peopleInRoom;
     private boolean busy;
     private RoomStartingTask task;
@@ -34,12 +37,14 @@ public class Room {
     public Room(String name, Cuboid cuboid) {
         this.name = name;
         this.cuboid = cuboid;
+        this.potionEffects = new ArrayList<>();
         this.peopleInRoom = new ArrayList<>();
     }
 
     public Room(String name, ConfigurationSection section) {
         this.name = name;
         this.cuboid = SerializeUtil.deserializeCuboid(section.getString("cuboid"));
+        this.potionEffects = SerializeUtil.deserializePotionEffects(section.getStringList("potionEffects"));
         this.peopleInRoom = new ArrayList<>();
     }
 
@@ -66,6 +71,18 @@ public class Room {
         return peopleInRoom.size();
     }
 
+    public void addPotionEffect(PotionEffectType type, int amplifier) {
+        potionEffects.add(new PotionEffect(type, PotionEffect.INFINITE_DURATION, amplifier - 1));
+    }
+
+    public void removePotionEffect(PotionEffectType type) {
+        potionEffects.removeIf(potionEffect -> potionEffect.getType().equals(type));
+    }
+
+    public boolean hasPotionEffect(PotionEffectType type) {
+        return potionEffects.stream().anyMatch(potionEffect -> potionEffect.getType().equals(type));
+    }
+
     public void generateBorder(boolean remove) {
         World world = cuboid.getWorld();
         int minX = cuboid.getX1();
@@ -78,17 +95,18 @@ public class Room {
         for (int y = minY; y <= maxY; y++) {
             for (int x = minX; x <= maxX; x++) {
                 for (int z = minZ; z <= maxZ; z++) {
-                    boolean borderX = (x == minX || x == maxX);
-                    boolean borderZ = (z == minZ || z == maxZ);
-                    boolean borderY = (y == minY || y == maxY);
+                    if (x != minX && x != maxX && z != minZ && z != maxZ && y != minY && y != maxY) continue;
 
-                    if (borderX || borderZ || borderY) {
-                        Block block = world.getBlockAt(x, y, z);
+                    Block block = world.getBlockAt(x, y, z);
+                    Material currentType = block.getType();
 
-                        if (remove && block.getType() == Material.AIR) {
+                    if (remove) {
+                        if (currentType == Material.GLASS) {
                             block.setType(Material.AIR);
                         }
-                        else if (block.getType() == Material.AIR){
+                    }
+                    else {
+                        if (currentType == Material.AIR) {
                             block.setType(Material.GLASS);
                         }
                     }
@@ -96,6 +114,7 @@ public class Room {
             }
         }
     }
+
 
     public void startTask(NokRooms plugin) {
         this.task = new RoomStartingTask(plugin, this);

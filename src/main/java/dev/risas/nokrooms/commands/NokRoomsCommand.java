@@ -5,12 +5,15 @@ import dev.risas.nokrooms.controllers.RoomController;
 import dev.risas.nokrooms.models.Room;
 import dev.risas.nokrooms.models.RoomSelection;
 import dev.risas.nokrooms.utilities.ChatUtil;
+import dev.risas.nokrooms.utilities.JavaUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffectType;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -39,6 +42,8 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
                     " &7● &e/" + label + " delete <room> &7- &fElimina una room",
                     " &7● &e/" + label + " list &7- &fMuestra todas las rooms.",
                     " &7● &e/" + label + " teleport <room> &7- &fTeletransporta a una room.",
+                    " &7● &e/" + label + " effect add <room> <efecto> <nivel> &7- &fAñade un efecto a una room.",
+                    " &7● &e/" + label + " effect remove <room> <efecto> &7- &fElimina un efecto de una room.",
                     " &7● &e/" + label + " wand &7- &fTe da la herramienta para crear rooms.",
                     " &7● &e/" + label + " reload &7- &fRecarga la configuración.",
                     ChatUtil.NORMAL_LINE
@@ -46,9 +51,7 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
             return false;
         }
 
-        String subCommand = args[0].toLowerCase();
-
-        switch (subCommand) {
+        switch (args[0].toLowerCase()) {
             case "create" -> {
                 if (!(sender instanceof Player player)) {
                     ChatUtil.sendMessage(sender, "&cEste comando solo puede ser ejecutado por un jugador.");
@@ -141,6 +144,62 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
 
                 ChatUtil.sendMessage(player, "&eTe has teletransportado al room '" + roomName + "'.");
             }
+            case "effect" -> {
+                String subCommand = args[1].toLowerCase();
+
+                if (args.length < 4) {
+                    ChatUtil.sendMessage(sender, "&cUsage: /" + label + " effect <add|remove> <nombre> <efecto> [nivel]");
+                    return true;
+                }
+
+                String roomName = args[2];
+                Room room = roomController.getRoom(roomName);
+
+                if (room == null) {
+                    ChatUtil.sendMessage(sender, "&cLa room '" + roomName + "' no existe.");
+                    return true;
+                }
+
+                String effect = args[3];
+                PotionEffectType type = PotionEffectType.getByName(effect);
+
+                if (type == null) {
+                    ChatUtil.sendMessage(sender, "&cEl efecto '" + effect + "' no existe.");
+                    return true;
+                }
+
+                switch (subCommand) {
+                    case "add" -> {
+                        if (args.length < 5) {
+                            ChatUtil.sendMessage(sender, "&cUsage: /" + label + " effect add <nombre> <efecto> <nivel>");
+                            return true;
+                        }
+
+                        String levelStr = args[4];
+                        Integer level = JavaUtil.getInteger(levelStr);
+
+                        if (level == null || level < 1) {
+                            ChatUtil.sendMessage(sender, "&cEl nivel debe ser un número entero mayor a 0.");
+                            return true;
+                        }
+
+                        room.addPotionEffect(type, level);
+                        roomController.saveRoom(room, false);
+                        ChatUtil.sendMessage(sender, "&eEfecto '&f" + effect + "&e' añadido a la room '&6" + roomName + "&e' con nivel &f" + level + "&e.");
+                    }
+                    case "remove" -> {
+                        if (!room.hasPotionEffect(type)) {
+                            ChatUtil.sendMessage(sender, "&cLa room '" + roomName + "' no tiene el efecto '" + effect + "'.");
+                            return true;
+                        }
+
+                        room.removePotionEffect(type);
+                        roomController.saveRoom(room, false);
+                        ChatUtil.sendMessage(sender, "&eEfecto '&f" + effect + "&e' eliminado de la room '&6" + roomName + "&e'.");
+                    }
+                    default -> ChatUtil.sendMessage(sender, "&cEl comando " + args[1] + " no existe.");
+                }
+            }
             case "wand" -> {
                 if (!(sender instanceof Player player)) {
                     ChatUtil.sendMessage(sender, "&cEste comando solo puede ser ejecutado por un jugador.");
@@ -160,6 +219,41 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
-        return args.length == 1 ? List.of("create", "delete", "list", "teleport", "wand", "reload") : null;
+        if (args.length == 1) {
+            return List.of("create", "delete", "list", "teleport", "effect", "wand", "reload");
+        }
+
+        if (args.length == 2) {
+            return switch (args[0].toLowerCase()) {
+                case "delete", "teleport" -> List.copyOf(roomController.getRooms().keySet());
+                case "effect" -> List.of("add", "remove");
+                default -> null;
+            };
+        }
+
+        if (args.length == 3 && "effect".equalsIgnoreCase(args[0])) {
+            return switch (args[1].toLowerCase()) {
+                case "add", "remove" -> List.copyOf(roomController.getRooms().keySet());
+                default -> null;
+            };
+        }
+
+        if (args.length == 4 && "effect".equalsIgnoreCase(args[0])) {
+            return switch (args[1].toLowerCase()) {
+                case "add" -> Arrays.stream(PotionEffectType.values())
+                        .map(PotionEffectType::getName)
+                        .toList();
+                case "remove" -> {
+                    Room room = roomController.getRoom(args[2]);
+                    yield (room != null) ?
+                            room.getPotionEffects().stream()
+                                    .map(effect -> effect.getType().getName())
+                                    .toList()
+                            : null;
+                }
+                default -> null;
+            };
+        }
+        return null;
     }
 }

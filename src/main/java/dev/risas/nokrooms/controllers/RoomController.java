@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Risas
@@ -73,20 +74,31 @@ public class RoomController {
         if (!room.getCuboid().contains(from) && room.getCuboid().contains(to)) {
             Bukkit.getServer().getPluginManager().callEvent(new RoomEnteredEvent(player, room));
         }
-        else if (room.getCuboid().contains(from) && !room.getCuboid().contains(to)) {
+        else if (room.getCuboid().contains(from) && !room.getCuboid().contains(to) && room.isRoomPlayer(player)) {
             Bukkit.getServer().getPluginManager().callEvent(new RoomLeftEvent(player, room));
         }
     }
 
     public void endRoom(Player winner, Player loser, Room room) {
+        String roomName = room.getName();
+
         if (winner != null) {
             languageFile.getStringList("room-message.winner")
-                    .forEach(message -> ChatUtil.sendMessage(winner, message));
+                    .forEach(message -> ChatUtil.sendMessage(winner, message
+                            .replace("%room-name%", roomName)));
         }
         if (loser != null) {
             languageFile.getStringList("room-message.loser")
-                    .forEach(message -> ChatUtil.sendMessage(loser, message));
+                    .forEach(message -> ChatUtil.sendMessage(loser, message
+                            .replace("%room-name%", roomName)));
         }
+
+        room.getPeopleInRoom().stream()
+                .filter(Objects::nonNull)
+                .forEach(roomPlayer ->
+                        room.getPotionEffects().forEach(potionEffect ->
+                                roomPlayer.removePotionEffect(potionEffect.getType()))
+                );
 
         room.generateBorder(true);
         room.setBusy(false);
@@ -101,6 +113,7 @@ public class RoomController {
         }
         else {
             configFile.set("rooms." + roomName + ".cuboid", SerializeUtil.serializeCuboid(room.getCuboid()));
+            configFile.set("rooms." + roomName + ".potionEffects", SerializeUtil.serializePotionEffects(room.getPotionEffects()));
         }
 
         configFile.save();
