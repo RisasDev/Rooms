@@ -31,7 +31,7 @@ public class Room {
     private final Cuboid cuboid;
     private List<PotionEffect> potionEffects;
     private List<Player> peopleInRoom;
-    private boolean busy;
+    private boolean busy, finished;
     private RoomStartingTask task;
 
     public Room(String name, Cuboid cuboid) {
@@ -114,7 +114,6 @@ public class Room {
             }
         }
     }
-
 
     public void startTask(NokRooms plugin) {
         this.task = new RoomStartingTask(plugin, this);

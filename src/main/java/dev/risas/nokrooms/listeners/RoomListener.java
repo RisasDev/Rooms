@@ -10,11 +10,13 @@ import dev.risas.nokrooms.utilities.ChatUtil;
 import dev.risas.nokrooms.utilities.FileConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -66,7 +68,7 @@ public class RoomListener implements Listener {
                 .replace("%room-name%", room.getName()));
 
         if (room.isBusy()) {
-            roomController.endRoom(room.getOpponent(player), player, room);
+            roomController.endRoom(room.getOpponent(player), player, room, false);
         }
         else if (room.isStartingTask() && !room.isBusy()) {
             room.stopTask();
@@ -99,7 +101,7 @@ public class RoomListener implements Listener {
         Room room = roomController.getRoomByPlayer(player);
         if (room == null || !room.isBusy()) return;
 
-        roomController.endRoom(player.getKiller(), player, room);
+        roomController.endRoom(player.getKiller(), player, room, false);
     }
 
     @EventHandler
@@ -109,6 +111,20 @@ public class RoomListener implements Listener {
         if (room == null) return;
 
         Bukkit.getPluginManager().callEvent(new RoomLeftEvent(player, room));
+    }
+
+    @EventHandler
+    public void onRoomBlockBreakEvent(BlockBreakEvent event) {
+        Block block = event.getBlock();
+        if (block.getType() != Material.GLASS) return;
+
+        Player player = event.getPlayer();
+        Room room = roomController.getRoomByLocation(block.getLocation());
+        if (room == null) return;
+
+        event.setCancelled(true);
+
+        ChatUtil.sendMessage(player, "&cNo puedes rompar los cristales de la room!");
     }
 
     @EventHandler

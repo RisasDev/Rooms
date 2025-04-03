@@ -26,10 +26,12 @@ import java.util.Objects;
 @Getter
 public class RoomController {
 
+    private final NokRooms plugin;
     private final FileConfig configFile, languageFile;
     private final Map<String, Room> rooms;
 
     public RoomController(NokRooms plugin) {
+        this.plugin = plugin;
         this.configFile = plugin.getConfigFile();
         this.languageFile = plugin.getLanguageFile();
         this.rooms = new HashMap<>();
@@ -79,7 +81,7 @@ public class RoomController {
         }
     }
 
-    public void endRoom(Player winner, Player loser, Room room) {
+    public void endRoom(Player winner, Player loser, Room room, boolean force) {
         String roomName = room.getName();
 
         if (winner != null) {
@@ -100,9 +102,16 @@ public class RoomController {
                                 roomPlayer.removePotionEffect(potionEffect.getType()))
                 );
 
-        room.generateBorder(true);
         room.setBusy(false);
         room.getPeopleInRoom().clear();
+
+        if (force) {
+            room.generateBorder(true);
+        }
+        else {
+            long delay = 20L * configFile.getInt("room-settings.remove-glass-delay");
+            Bukkit.getScheduler().runTaskLater(plugin, () -> room.generateBorder(true), delay);
+        }
     }
 
     public void saveRoom(Room room, boolean delete) {
@@ -135,6 +144,6 @@ public class RoomController {
     public void onDisable() {
         rooms.values().stream()
                 .filter(Room::isBusy)
-                .forEach(room -> endRoom(null, null, room));
+                .forEach(room -> endRoom(null, null, room, true));
     }
 }
