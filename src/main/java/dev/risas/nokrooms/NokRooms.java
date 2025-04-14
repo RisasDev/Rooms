@@ -35,6 +35,7 @@ public final class NokRooms extends JavaPlugin {
     }
 
     public void onReload() {
+        this.configFile.reload();
         this.languageFile.reload();
     }
 }

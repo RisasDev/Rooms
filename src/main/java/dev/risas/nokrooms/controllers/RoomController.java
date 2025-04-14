@@ -26,10 +26,12 @@ import java.util.Objects;
 @Getter
 public class RoomController {
 
+    private final NokRooms plugin;
     private final FileConfig configFile, languageFile;
     private final Map<String, Room> rooms;
 
     public RoomController(NokRooms plugin) {
+        this.plugin = plugin;
         this.configFile = plugin.getConfigFile();
         this.languageFile = plugin.getLanguageFile();
         this.rooms = new HashMap<>();
@@ -79,18 +81,16 @@ public class RoomController {
         }
     }
 
-    public void endRoom(Player winner, Player loser, Room room) {
-        String roomName = room.getName();
+    public void endRoom(Room room, boolean force) {
+        if (!force) {
+            String roomName = room.getName();
+            Player winner = room.getWinner();
 
-        if (winner != null) {
-            languageFile.getStringList("room-message.winner")
-                    .forEach(message -> ChatUtil.sendMessage(winner, message
-                            .replace("%room-name%", roomName)));
-        }
-        if (loser != null) {
-            languageFile.getStringList("room-message.loser")
-                    .forEach(message -> ChatUtil.sendMessage(loser, message
-                            .replace("%room-name%", roomName)));
+            if (winner != null) {
+                languageFile.getStringList("room-message.winner")
+                        .forEach(message -> ChatUtil.sendMessage(winner, message
+                                .replace("%room-name%", roomName)));
+            }
         }
 
         room.getPeopleInRoom().stream()
@@ -100,9 +100,16 @@ public class RoomController {
                                 roomPlayer.removePotionEffect(potionEffect.getType()))
                 );
 
-        room.generateBorder(true);
         room.setBusy(false);
         room.getPeopleInRoom().clear();
+
+        if (force) {
+            room.generateBorder(true);
+        }
+        else {
+            long delay = 20L * configFile.getInt("room-settings.remove-glass-delay");
+            Bukkit.getScheduler().runTaskLater(plugin, () -> room.generateBorder(true), delay);
+        }
     }
 
     public void saveRoom(Room room, boolean delete) {
@@ -114,6 +121,8 @@ public class RoomController {
         else {
             configFile.set("rooms." + roomName + ".cuboid", SerializeUtil.serializeCuboid(room.getCuboid()));
             configFile.set("rooms." + roomName + ".potionEffects", SerializeUtil.serializePotionEffects(room.getPotionEffects()));
+            configFile.set("rooms." + roomName + ".keepInventory", room.isKeepInventory());
+            configFile.set("rooms." + roomName + ".participants", room.getParticipants());
         }
 
         configFile.save();
@@ -135,6 +144,6 @@ public class RoomController {
     public void onDisable() {
         rooms.values().stream()
                 .filter(Room::isBusy)
-                .forEach(room -> endRoom(null, null, room));
+                .forEach(room -> endRoom(room, true));
     }
 }
