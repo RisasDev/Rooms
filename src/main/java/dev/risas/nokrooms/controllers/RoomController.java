@@ -4,6 +4,7 @@ import dev.risas.nokrooms.NokRooms;
 import dev.risas.nokrooms.events.RoomEnteredEvent;
 import dev.risas.nokrooms.events.RoomLeftEvent;
 import dev.risas.nokrooms.models.Room;
+import dev.risas.nokrooms.tasks.RoomWinnerBorderTask;
 import dev.risas.nokrooms.utilities.ChatUtil;
 import dev.risas.nokrooms.utilities.FileConfig;
 import dev.risas.nokrooms.utilities.SerializeUtil;
@@ -91,6 +92,17 @@ public class RoomController {
                         .forEach(message -> ChatUtil.sendMessage(winner, message
                                 .replace("%room-name%", roomName)));
             }
+
+            RoomWinnerBorderTask task = new RoomWinnerBorderTask(
+                    plugin,
+                    room,
+                    room.getWinner(),
+                    configFile.getInt("room-settings.remove-glass-delay")
+            );
+            task.start();
+        }
+        else {
+            room.generateBorder(true);
         }
 
         room.getPeopleInRoom().stream()
@@ -102,14 +114,6 @@ public class RoomController {
 
         room.setBusy(false);
         room.getPeopleInRoom().clear();
-
-        if (force) {
-            room.generateBorder(true);
-        }
-        else {
-            long delay = 20L * configFile.getInt("room-settings.remove-glass-delay");
-            Bukkit.getScheduler().runTaskLater(plugin, () -> room.generateBorder(true), delay);
-        }
     }
 
     public void saveRoom(Room room, boolean delete) {

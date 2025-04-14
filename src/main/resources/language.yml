@@ -7,3 +7,4 @@ room-message:
   leave: "&eHaz salido de la room &6%room-name%&e."
   not-start: "&cEl duelo no pudo comenzar porque hay muchos jugadores en la room."
   start: "&aEl duelo ha comenzado!"
+  action-bar: "&eTe quedan &f%time% &epara salir de la room."
