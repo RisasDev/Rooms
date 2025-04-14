@@ -22,7 +22,7 @@ public class RoomStartingTask extends BukkitRunnable {
     public void run() {
         room.setTask(null);
 
-        if (room.getRoomSize() > 2) {
+        if (room.getRoomSize() > room.getParticipants()) {
             room.sendRoomMessage(languageFile.getString("room-message.not-start"));
             return;
         }

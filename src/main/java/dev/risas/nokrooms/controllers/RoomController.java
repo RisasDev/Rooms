@@ -79,18 +79,16 @@ public class RoomController {
         }
     }
 
-    public void endRoom(Player winner, Player loser, Room room) {
-        String roomName = room.getName();
+    public void endRoom(Room room, boolean force) {
+        if (!force) {
+            String roomName = room.getName();
+            Player winner = room.getWinner();
 
-        if (winner != null) {
-            languageFile.getStringList("room-message.winner")
-                    .forEach(message -> ChatUtil.sendMessage(winner, message
-                            .replace("%room-name%", roomName)));
-        }
-        if (loser != null) {
-            languageFile.getStringList("room-message.loser")
-                    .forEach(message -> ChatUtil.sendMessage(loser, message
-                            .replace("%room-name%", roomName)));
+            if (winner != null) {
+                languageFile.getStringList("room-message.winner")
+                        .forEach(message -> ChatUtil.sendMessage(winner, message
+                                .replace("%room-name%", roomName)));
+            }
         }
 
         room.getPeopleInRoom().stream()
@@ -114,6 +112,8 @@ public class RoomController {
         else {
             configFile.set("rooms." + roomName + ".cuboid", SerializeUtil.serializeCuboid(room.getCuboid()));
             configFile.set("rooms." + roomName + ".potionEffects", SerializeUtil.serializePotionEffects(room.getPotionEffects()));
+            configFile.set("rooms." + roomName + ".keepInventory", room.isKeepInventory());
+            configFile.set("rooms." + roomName + ".participants", room.getParticipants());
         }
 
         configFile.save();
@@ -135,6 +135,6 @@ public class RoomController {
     public void onDisable() {
         rooms.values().stream()
                 .filter(Room::isBusy)
-                .forEach(room -> endRoom(null, null, room));
+                .forEach(room -> endRoom(room, true));
     }
 }

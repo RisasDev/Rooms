@@ -44,6 +44,8 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
                     " &7● &e/" + label + " teleport <room> &7- &fTeletransporta a una room.",
                     " &7● &e/" + label + " effect add <room> <efecto> <nivel> &7- &fAñade un efecto a una room.",
                     " &7● &e/" + label + " effect remove <room> <efecto> &7- &fElimina un efecto de una room.",
+                    " &7● &e/" + label + " keepInventory <room> <true|false> &7- &fMantiene el inventario de los jugadores al morir.",
+                    " &7● &e/" + label + " participants <room> <amount> &7- &fEstablece la cantidad de participantes en una room.",
                     " &7● &e/" + label + " wand &7- &fTe da la herramienta para crear rooms.",
                     " &7● &e/" + label + " reload &7- &fRecarga la configuración.",
                     ChatUtil.NORMAL_LINE
@@ -200,6 +202,62 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
                     default -> ChatUtil.sendMessage(sender, "&cEl comando " + args[1] + " no existe.");
                 }
             }
+            case "keepinventory" -> {
+                if (args.length < 3) {
+                    ChatUtil.sendMessage(sender, "&cUsage: /" + label + " keepInventory <room> <true|false>");
+                    return false;
+                }
+
+                String roomName = args[1];
+                Room room = roomController.getRoom(roomName);
+
+                if (room == null) {
+                    ChatUtil.sendMessage(sender, "&cLa room '" + roomName + "' no existe.");
+                    return false;
+                }
+
+                String value = args[2].toLowerCase();
+
+                boolean keepInventory = switch (value) {
+                    case "true", "1", "yes", "y" -> true;
+                    case "false", "0", "no", "n" -> false;
+                    default -> {
+                        ChatUtil.sendMessage(sender, "&cEl valor debe ser 'true' o 'false'.");
+                        yield false;
+                    }
+                };
+
+                room.setKeepInventory(keepInventory);
+                roomController.saveRoom(room, false);
+
+                ChatUtil.sendMessage(sender, "&eEl valor de '&fkeep-inventory&e' ha sido establecido a '&6" + value + "&e'.");
+            }
+            case "participants" -> {
+                if (args.length < 3) {
+                    ChatUtil.sendMessage(sender, "&cUsage: /" + label + " participants <room> <amount>");
+                    return false;
+                }
+
+                String roomName = args[1];
+                Room room = roomController.getRoom(roomName);
+
+                if (room == null) {
+                    ChatUtil.sendMessage(sender, "&cLa room '" + roomName + "' no existe.");
+                    return false;
+                }
+
+                String amountStr = args[2];
+                Integer amount = JavaUtil.getInteger(amountStr);
+
+                if (amount == null || amount < 2) {
+                    ChatUtil.sendMessage(sender, "&cLa cantidad de participantes debe ser un número entero mayor a 1.");
+                    return false;
+                }
+
+                room.setParticipants(amount);
+                roomController.saveRoom(room, false);
+                ChatUtil.sendMessage(sender, "&eLa cantidad de participantes ha sido establecida a '&6" + amount + "&e'.");
+            }
             case "wand" -> {
                 if (!(sender instanceof Player player)) {
                     ChatUtil.sendMessage(sender, "&cEste comando solo puede ser ejecutado por un jugador.");
@@ -220,12 +278,12 @@ public class NokRoomsCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 1) {
-            return List.of("create", "delete", "list", "teleport", "effect", "wand", "reload");
+            return List.of("create", "delete", "list", "teleport", "effect", "keepInventory", "participants", "wand", "reload");
         }
 
         if (args.length == 2) {
             return switch (args[0].toLowerCase()) {
-                case "delete", "teleport" -> List.copyOf(roomController.getRooms().keySet());
+                case "delete", "teleport", "keepinventory", "participants" -> List.copyOf(roomController.getRooms().keySet());
                 case "effect" -> List.of("add", "remove");
                 default -> null;
             };

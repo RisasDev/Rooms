@@ -3,6 +3,7 @@ package dev.risas.nokrooms.models;
 import dev.risas.nokrooms.NokRooms;
 import dev.risas.nokrooms.tasks.RoomStartingTask;
 import dev.risas.nokrooms.utilities.ChatUtil;
+import dev.risas.nokrooms.utilities.FileConfig;
 import dev.risas.nokrooms.utilities.SerializeUtil;
 import dev.risas.nokrooms.utilities.cuboid.Cuboid;
 import lombok.Getter;
@@ -33,12 +34,15 @@ public class Room {
     private List<Player> peopleInRoom;
     private boolean busy;
     private RoomStartingTask task;
+    private boolean keepInventory;
+    private int participants;
 
     public Room(String name, Cuboid cuboid) {
         this.name = name;
         this.cuboid = cuboid;
         this.potionEffects = new ArrayList<>();
         this.peopleInRoom = new ArrayList<>();
+        this.participants = 2;
     }
 
     public Room(String name, ConfigurationSection section) {
@@ -46,13 +50,16 @@ public class Room {
         this.cuboid = SerializeUtil.deserializeCuboid(section.getString("cuboid"));
         this.potionEffects = SerializeUtil.deserializePotionEffects(section.getStringList("potionEffects"));
         this.peopleInRoom = new ArrayList<>();
+        this.keepInventory = section.getBoolean("keepInventory");
+        this.participants = section.getInt("participants");
     }
 
-    public Player getOpponent(Player player) {
-        return peopleInRoom.stream()
-                .filter(roomPlayer -> !roomPlayer.equals(player))
-                .findFirst()
-                .orElse(null);
+    public Player getWinner() {
+        return peopleInRoom.get(0);
+    }
+
+    public boolean isFinished() {
+        return peopleInRoom.size() == 1;
     }
 
     public void addPlayer(Player player) {
@@ -114,7 +121,6 @@ public class Room {
             }
         }
     }
-
 
     public void startTask(NokRooms plugin) {
         this.task = new RoomStartingTask(plugin, this);
