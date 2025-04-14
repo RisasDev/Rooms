@@ -8,12 +8,13 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class RoomStartingTask extends BukkitRunnable {
 
     private final NokRooms plugin;
-    private final FileConfig languageFile;
+    private final FileConfig configFile, languageFile;
 
     private final Room room;
 
     public RoomStartingTask(NokRooms plugin, Room room) {
         this.plugin = plugin;
+        this.configFile = plugin.getConfigFile();
         this.languageFile = plugin.getLanguageFile();
         this.room = room;
     }
@@ -35,6 +36,6 @@ public class RoomStartingTask extends BukkitRunnable {
     }
 
     public void start() {
-        this.runTaskLater(plugin, 10L);
+        this.runTaskLater(plugin, 20L * configFile.getInt("room-settings.generate-glass-delay"));
     }
 }

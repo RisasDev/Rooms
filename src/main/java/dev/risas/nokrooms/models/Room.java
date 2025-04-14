@@ -32,7 +32,7 @@ public class Room {
     private final Cuboid cuboid;
     private List<PotionEffect> potionEffects;
     private List<Player> peopleInRoom;
-    private boolean busy;
+    private boolean busy, finished;
     private RoomStartingTask task;
     private boolean keepInventory;
     private int participants;

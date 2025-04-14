@@ -1,1 +1,5 @@
+room-settings:
+  generate-glass-delay: 0 # IN SECONDS
+  remove-glass-delay: 10 # IN SECONDS
+
 rooms: {}

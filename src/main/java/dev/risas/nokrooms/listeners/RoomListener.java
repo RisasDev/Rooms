@@ -10,13 +10,11 @@ import dev.risas.nokrooms.utilities.ChatUtil;
 import dev.risas.nokrooms.utilities.FileConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -53,7 +51,7 @@ public class RoomListener implements Listener {
         ChatUtil.sendMessage(player, languageFile.getString("room-message.join")
                 .replace("%room-name%", room.getName()));
 
-        if (room.getRoomSize() >= room.getParticipants() && !room.isStartingTask()) {
+        if (room.getRoomSize() >= 2 && !room.isStartingTask()) {
             room.startTask(plugin);
         }
     }
@@ -64,24 +62,16 @@ public class RoomListener implements Listener {
 
         Room room = event.getRoom();
         room.removePlayer(player);
+        ChatUtil.sendMessage(player, languageFile.getString("room-message.leave")
+                .replace("%room-name%", room.getName()));
 
         if (room.isBusy()) {
-            languageFile.getStringList("room-message.loser")
-                    .forEach(message -> ChatUtil.sendMessage(player, message
-                            .replace("%room-name%", room.getName())));
-        }
-        else {
-            ChatUtil.sendMessage(player, languageFile.getString("room-message.leave")
-                    .replace("%room-name%", room.getName()));
-        }
-
-        if (room.isBusy() && room.isFinished()) {
-            roomController.endRoom(room, false);
+            roomController.endRoom(room.getOpponent(player), player, room);
         }
         else if (room.isStartingTask() && !room.isBusy()) {
             room.stopTask();
         }
-        else if (room.getRoomSize() == room.getParticipants() && !room.isStartingTask()) {
+        else if (room.getRoomSize() == 2 && !room.isStartingTask()) {
             room.startTask(plugin);
         }
     }
@@ -109,19 +99,7 @@ public class RoomListener implements Listener {
         Room room = roomController.getRoomByPlayer(player);
         if (room == null || !room.isBusy()) return;
 
-        if (room.isKeepInventory()) {
-            event.setKeepInventory(true);
-            event.getDrops().clear();
-        }
-
-        room.removePlayer(player);
-        languageFile.getStringList("room-message.loser")
-                .forEach(message -> ChatUtil.sendMessage(player, message
-                        .replace("%room-name%", room.getName())));
-
-        if (!room.isFinished()) return;
-
-        roomController.endRoom(room, false);
+        roomController.endRoom(player.getKiller(), player, room);
     }
 
     @EventHandler
@@ -131,20 +109,6 @@ public class RoomListener implements Listener {
         if (room == null) return;
 
         Bukkit.getPluginManager().callEvent(new RoomLeftEvent(player, room));
-    }
-
-    @EventHandler(ignoreCancelled = true)
-    public void onRoomBlockBreakEvent(BlockBreakEvent event) {
-        Block block = event.getBlock();
-        if (block.getType() != Material.GLASS) return;
-
-        Player player = event.getPlayer();
-        Room room = roomController.getRoomByPlayer(player);
-        if (room == null) return;
-
-        event.setCancelled(true);
-
-        ChatUtil.sendMessage(player, "&cNo puedes romper los cristales de la sala!");
     }
 
     @EventHandler
